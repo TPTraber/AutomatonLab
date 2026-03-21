@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cellular Simulations</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-simulation">
+
+  <div class="sim-layout">
+
+    <main class="sim-canvas-area">
+      <a class="back-btn" href="index.html">&#8592; Gallery</a>
+      <div class="sim-placeholder" id="sim-output">
+        <p>Simulation output will appear here</p>
+      </div>
+    </main>
+
+    <aside class="sim-sidebar">
+      <div class="sim-meta">
+        <input class="slime-name-input" type="text" id="slime-name" value="Loading..." />
+        <div class="sim-meta-row">
+          <span class="slime-author" id="slime-author">by —</span>
+          <span class="type-badge" id="type-badge"></span>
+        </div>
+      </div>
+
+      <form id="params-form">
+        <!-- injected by simulation.js based on type -->
+      </form>
+
+      <div class="sim-actions">
+        <button type="submit" form="params-form" id="run-btn" class="btn-primary">Run</button>
+        <button type="button" id="save-btn" class="btn-ghost">Save</button>
+      </div>
+
+      <div id="status"></div>
+    </aside>
+
+  </div>
+
+  <script src="simulation.js"></script>
+</body>
+</html>

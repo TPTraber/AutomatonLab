@@ -1,0 +1,56 @@
+[
+  {
+    "id": "1774128853999",
+    "name": "New Slime Mold",
+    "author": "Anonymous",
+    "type": "slime",
+    "params": {
+      "num_agents": 1000,
+      "sensor_angle": 45.0,
+      "sensor_distance": 9.0,
+      "rotation_angle": 45.0,
+      "step_size": 1.0,
+      "deposit_amount": 5.0,
+      "decay_rate": 0.9,
+      "diffuse_rate": 0.5,
+      "width": 800,
+      "height": 600
+    },
+    "created_at": 1774128853
+  },
+  {
+    "id": "1774128887157",
+    "name": "New Boids",
+    "author": "Anonymous",
+    "type": "boids",
+    "params": {
+      "num_boids": 200,
+      "max_speed": 4,
+      "min_speed": 1,
+      "perception_radius": 60,
+      "separation_radius": 20,
+      "alignment_weight": 1,
+      "cohesion_weight": 1,
+      "separation_weight": 1.5,
+      "width": 800,
+      "height": 600
+    },
+    "created_at": 1774128887
+  },
+  {
+    "id": "1774128900107",
+    "name": "New Cells",
+    "author": "Anonymous",
+    "type": "cells",
+    "params": {
+      "grid_width": 120,
+      "grid_height": 90,
+      "birth_min": 3,
+      "birth_max": 3,
+      "survival_min": 2,
+      "survival_max": 3,
+      "initial_density": 0.3
+    },
+    "created_at": 1774128900
+  }
+]

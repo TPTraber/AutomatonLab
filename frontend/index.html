@@ -3,85 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Slime Mold Simulation</title>
+  <title>Cellular Simulations</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="layout">
-    <aside class="sidebar">
-      <h1>Slime Mold</h1>
-      <p class="subtitle">Cellular Simulation</p>
+<body class="page-gallery">
 
-      <form id="params-form">
-        <div class="param-group">
-          <h2>Agents</h2>
-          <label>
-            Agent Count
-            <input type="number" name="num_agents" value="1000" min="1" max="100000" />
-          </label>
-          <label>
-            Step Size
-            <input type="number" name="step_size" value="1.0" min="0.1" max="10" step="0.1" />
-          </label>
-        </div>
+  <header class="gallery-header">
+    <div>
+      <h1>Cellular Simulations</h1>
+    </div>
+    <button class="btn-primary" id="new-btn">+ New</button>
+  </header>
 
-        <div class="param-group">
-          <h2>Sensors</h2>
-          <label>
-            Sensor Angle (°)
-            <input type="number" name="sensor_angle" value="45" min="1" max="180" />
-          </label>
-          <label>
-            Sensor Distance
-            <input type="number" name="sensor_distance" value="9" min="1" max="50" />
-          </label>
-          <label>
-            Rotation Angle (°)
-            <input type="number" name="rotation_angle" value="45" min="1" max="180" />
-          </label>
-        </div>
+  <main class="gallery-grid" id="gallery-grid">
+    <!-- cards injected by main.js -->
+  </main>
 
-        <div class="param-group">
-          <h2>Trail</h2>
-          <label>
-            Deposit Amount
-            <input type="number" name="deposit_amount" value="5.0" min="0.1" max="50" step="0.1" />
-          </label>
-          <label>
-            Decay Rate
-            <input type="number" name="decay_rate" value="0.9" min="0.01" max="1" step="0.01" />
-          </label>
-          <label>
-            Diffuse Rate
-            <input type="number" name="diffuse_rate" value="0.5" min="0.01" max="1" step="0.01" />
-          </label>
-        </div>
-
-        <div class="param-group">
-          <h2>Canvas</h2>
-          <label>
-            Width
-            <input type="number" name="width" value="800" min="100" max="2000" step="10" />
-          </label>
-          <label>
-            Height
-            <input type="number" name="height" value="600" min="100" max="2000" step="10" />
-          </label>
-        </div>
-
-        <button type="submit" id="run-btn">Run Simulation</button>
-      </form>
-
-      <div id="status"></div>
-    </aside>
-
-    <main class="canvas-area">
-      <div class="placeholder">
-        <p>Simulation output will appear here</p>
+  <!-- Type picker overlay -->
+  <div class="overlay hidden" id="type-picker">
+    <div class="type-picker-panel">
+      <div class="type-picker-header">
+        <span>Choose a simulation type</span>
+        <button class="overlay-close" id="picker-close">&#10005;</button>
       </div>
-    </main>
+      <div class="type-options">
+
+        <button class="type-option" data-type="slime">
+          <div class="type-preview"></div>
+          <div class="type-label">
+            <strong>Slime Mold</strong>
+            <span>Physarum-style agent trails</span>
+          </div>
+        </button>
+
+        <button class="type-option" data-type="boids">
+          <div class="type-preview"></div>
+          <div class="type-label">
+            <strong>Boids</strong>
+            <span>Flocking &amp; emergence</span>
+          </div>
+        </button>
+
+        <button class="type-option" data-type="cells">
+          <div class="type-preview"></div>
+          <div class="type-label">
+            <strong>Cells</strong>
+            <span>Cellular automata rules</span>
+          </div>
+        </button>
+
+      </div>
+    </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const API = "http://localhost:6000";
+const API = "http://localhost:7070";
 const form = document.getElementById("params-form");
 const status = document.getElementById("status");
 const runBtn = document.getElementById("run-btn");
