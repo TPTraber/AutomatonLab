@@ -52,5 +52,30 @@
       "initial_density": 0.3
     },
     "created_at": 1774128900
+  },
+  {
+    "id": "1774132574796",
+    "name": "New Fluid",
+    "author": "Anonymous",
+    "type": "fluid",
+    "params": {
+      "grid_width": 320,
+      "grid_height": 240,
+      "cell_size": 3,
+      "dt": 0.04,
+      "viscosity": 8e-06,
+      "diffusion": 1e-06,
+      "project_iters": 20,
+      "mouse_force": 60,
+      "dye_amount": 1.2,
+      "brush_size": 14,
+      "swirl_strength": 0.01,
+      "decay": 0.997,
+      "source_strength": 0.06,
+      "theme": 2,
+      "color_change": 0,
+      "color_speed": 90
+    },
+    "created_at": 1774132574
   }
 ]

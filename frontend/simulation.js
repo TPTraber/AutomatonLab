@@ -12,7 +12,7 @@ const nameInput = document.getElementById("slime-name");
 const authorEl = document.getElementById("slime-author");
 const typeBadge = document.getElementById("type-badge");
 
-const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells" };
+const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells", fluid: "Fluid" };
 
 const SCHEMAS = {
   slime: [
@@ -54,6 +54,28 @@ const SCHEMAS = {
     { group: "Canvas", fields: [
       { name: "width",  label: "Width",  min: 100, max: 2000, step: 10 },
       { name: "height", label: "Height", min: 100, max: 2000, step: 10 },
+    ]},
+  ],
+
+  fluid: [
+    { group: "Simulation", fields: [
+      { name: "swirl_strength", label: "Swirl Strength", min: 0, max: 0.05, step: 0.001 },
+      { name: "dt",             label: "Time Step",      min: 0.01, max: 0.2, step: 0.01 },
+    ]},
+    { group: "Dye", fields: [
+      { name: "decay",           label: "Decay (0.98=fast, 0.999=slow)", min: 0.95, max: 0.999, step: 0.001 },
+      { name: "source_strength", label: "Source Strength", min: 0.01, max: 0.3, step: 0.01 },
+      { name: "dye_amount",      label: "Mouse Dye Amount", min: 0.1, max: 3, step: 0.1 },
+    ]},
+    { group: "Color", fields: [
+      { name: "theme",         label: "Theme (0=turbo 1=ocean 2=inferno 3=plasma)", min: 0, max: 3, step: 1 },
+      { name: "color_change",  label: "Auto Color Cycle (0/1)", min: 0, max: 1,   step: 1    },
+      { name: "color_speed",   label: "Cycle Speed (frames)",   min: 30, max: 600, step: 10  },
+    ]},
+    { group: "Advanced", fields: [
+      { name: "brush_size",    label: "Brush Size",    min: 4, max: 40, step: 1 },
+      { name: "mouse_force",   label: "Mouse Force",   min: 10, max: 200, step: 5 },
+      { name: "project_iters", label: "Solver Quality", min: 5, max: 40, step: 1 },
     ]},
   ],
 
@@ -122,6 +144,7 @@ async function load() {
     typeBadge.textContent = TYPE_LABELS[sim.type] ?? sim.type;
     typeBadge.className = `type-badge type-badge--${sim.type}`;
     document.title = `${sim.name} | Cellular Simulations`;
+    currentSim = sim;
     buildForm(sim.type);
     fillForm(sim.params);
   } catch (err) {
@@ -129,17 +152,67 @@ async function load() {
   }
 }
 
+const simStream      = document.getElementById("sim-stream");
+const simPlaceholder = document.getElementById("sim-placeholder");
+
+let currentSim = null;  // holds loaded sim object
+let mouseDrawing = false;
+let interactThrottle = null;
+
+function sendMouse(clientX, clientY, drawing) {
+  if (!currentSim || currentSim.type !== "fluid") return;
+  const cs    = currentSim.params.cell_size   ?? 3;
+  const gCols = currentSim.params.grid_width  ?? 320;
+  const gRows = currentSim.params.grid_height ?? 240;
+  const rect  = simStream.getBoundingClientRect();
+  // Convert display pixels to grid cell coords using known sim dimensions
+  const c = Math.max(0, Math.min(gCols - 1,
+    Math.floor(((clientX - rect.left) / rect.width)  * gCols)));
+  const r = Math.max(0, Math.min(gRows - 1,
+    Math.floor(((clientY - rect.top)  / rect.height) * gRows)));
+  // Always send mousedown; throttle mousemove to every 30ms
+  if (!drawing || !interactThrottle) {
+    if (drawing) {
+      interactThrottle = setTimeout(() => { interactThrottle = null; }, 30);
+    }
+    fetch(`${API}/api/interact/${simId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: currentSim.type, r, c, drawing }),
+    }).catch(() => {});
+  }
+}
+
+simStream.addEventListener("mousedown", (e) => {
+  mouseDrawing = true;
+  sendMouse(e.clientX, e.clientY, true);
+});
+simStream.addEventListener("mousemove", (e) => {
+  if (mouseDrawing) sendMouse(e.clientX, e.clientY, true);
+});
+simStream.addEventListener("mouseup",   () => { mouseDrawing = false; sendMouse(0, 0, false); });
+simStream.addEventListener("mouseleave",() => { mouseDrawing = false; sendMouse(0, 0, false); });
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   runBtn.disabled = true;
-  setStatus("Running...");
+  setStatus("Saving...");
   try {
-    const res = await fetch(`${API}/api/simulate`, {
-      method: "POST",
+    // Save current params first so the stream uses them
+    const res = await fetch(`${API}/api/slimes/${simId}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ params: getFormParams() }),
+      body: JSON.stringify({ name: nameInput.value.trim() || "Unnamed", params: getFormParams() }),
     });
-    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    if (!res.ok) throw new Error(`Save failed ${res.status}`);
+
+    // Keep currentSim.params in sync so mouse coords are accurate
+    if (currentSim) currentSim.params = { ...currentSim.params, ...getFormParams() };
+
+    // Point img at the MJPEG stream (cache-bust so it restarts on re-run)
+    simStream.src = `${API}/api/stream/${simId}?t=${Date.now()}`;
+    simStream.classList.remove("hidden");
+    simPlaceholder.classList.add("hidden");
     setStatus("Running", "ok");
   } catch (err) {
     setStatus(`Error: ${err.message}`, "error");
@@ -148,14 +221,31 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
+function capturePreview() {
+  if (simStream.classList.contains("hidden")) return null;
+  try {
+    const canvas = document.createElement("canvas");
+    const p = currentSim?.params ?? {};
+    canvas.width  = (p.grid_width  ?? 320) * (p.cell_size ?? 3);
+    canvas.height = (p.grid_height ?? 240) * (p.cell_size ?? 3);
+    canvas.getContext("2d").drawImage(simStream, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.75);
+  } catch {
+    return null;
+  }
+}
+
 saveBtn.addEventListener("click", async () => {
   saveBtn.disabled = true;
   setStatus("Saving...");
   try {
+    const preview = capturePreview();
+    const body = { name: nameInput.value.trim() || "Unnamed", params: getFormParams() };
+    if (preview) body.preview = preview;
     const res = await fetch(`${API}/api/slimes/${simId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: nameInput.value.trim() || "Unnamed", params: getFormParams() }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`Server error ${res.status}`);
     setStatus("Saved", "ok");

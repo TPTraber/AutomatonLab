@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -42,6 +42,24 @@ DEFAULT_PARAMS = {
         "survival_min": 2,
         "survival_max": 3,
         "initial_density": 0.3,
+    },
+    "fluid": {
+        "grid_width": 320,
+        "grid_height": 240,
+        "cell_size": 3,
+        "dt": 0.04,
+        "viscosity": 0.000008,
+        "diffusion": 0.000001,
+        "project_iters": 20,
+        "mouse_force": 60.0,
+        "dye_amount": 1.2,
+        "brush_size": 14,
+        "swirl_strength": 0.010,
+        "decay": 0.993,
+        "source_strength": 0.06,
+        "theme": 0,
+        "color_change": 0,
+        "color_speed": 180,
     },
 }
 
@@ -114,6 +132,8 @@ def update_sim(sim_id):
     if "params" in body:
         defaults = DEFAULT_PARAMS.get(sim.get("type", "slime"), {})
         sim["params"] = {**defaults, **body["params"]}
+    if "preview" in body:
+        sim["preview"] = body["preview"]
     save_sims(sims)
     return jsonify(sim)
 
@@ -128,10 +148,53 @@ def simulate():
     return jsonify({"status": "ok", "params": merged})
 
 
+@app.route("/api/stream/<sim_id>")
+def stream_sim(sim_id):
+    sims = load_sims()
+    sim = next((s for s in sims if s["id"] == sim_id), None)
+    if not sim:
+        return jsonify({"error": "Not found"}), 404
+
+    sim_type = sim.get("type", "slime")
+    params = sim.get("params", {})
+
+    if sim_type == "fluid":
+        from fluid import stream as fluid_stream
+        gen = fluid_stream(sim_id, params)
+    else:
+        return jsonify({"error": f"Streaming not yet supported for type: {sim_type}"}), 501
+
+    def mjpeg():
+        for frame_bytes in gen:
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" +
+                frame_bytes +
+                b"\r\n"
+            )
+
+    return Response(mjpeg(), mimetype="multipart/x-mixed-replace; boundary=frame")
+
+
+@app.route("/api/interact/<sim_id>", methods=["POST"])
+def interact(sim_id):
+    body = request.json or {}
+    sim_type = body.get("type", "fluid")
+    if sim_type == "fluid":
+        from fluid import set_mouse_state
+        set_mouse_state(
+            sim_id,
+            int(body.get("r", 0)),
+            int(body.get("c", 0)),
+            bool(body.get("drawing", False)),
+        )
+    return jsonify({"ok": True})
+
+
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":
-    app.run(port=7070, debug=True)
+    app.run(port=7070, debug=True, threaded=True)

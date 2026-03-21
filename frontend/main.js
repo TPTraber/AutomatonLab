@@ -4,7 +4,7 @@ const newBtn = document.getElementById("new-btn");
 const picker = document.getElementById("type-picker");
 const pickerClose = document.getElementById("picker-close");
 
-const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells" };
+const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells", fluid: "Fluid" };
 
 function formatDate(ts) {
   return new Date(ts * 1000).toLocaleDateString(undefined, {
@@ -15,8 +15,11 @@ function formatDate(ts) {
 function createCard(sim) {
   const card = document.createElement("div");
   card.className = "slime-card";
+  const previewStyle = sim.preview
+    ? `style="background-image: url('${sim.preview}'); background-size: cover; background-position: center;"`
+    : "";
   card.innerHTML = `
-    <div class="card-preview"></div>
+    <div class="card-preview" ${previewStyle}>${sim.preview ? "" : "no preview"}</div>
     <div class="card-info">
       <div class="card-top-row">
         <span class="card-name">${sim.name}</span>
