@@ -9,52 +9,93 @@ clock = pygame.time.Clock()
 running = True
 dt = 0
 
-boidNum  = 50
-speed = 0
+boidNum  = 100
+minSpeed = 3
+maxSpeed = 8
 
 class Boid:
-    def __init__(self, startingPos):
+    def __init__(self, startingPos, sightDistance, fearDistance):
         self.pos = startingPos
+        self.sightDistance = sightDistance
+        self.fearDistance = fearDistance
         self.velocity = pygame.Vector2(random.random() * 10 - 5,random.random() * 10 - 5)
+        self.rotation = 0
         self.neighbors = []
+        self.evilNeighbors = []
         self.cohesion = pygame.Vector2()
+        self.separation = pygame.Vector2()
+        self.alignment = pygame.Vector2()
 
     def updatePos(self, speed):
+        self.rotation = math.atan2(self.velocity.y , self.velocity.x)
         self.pos = self.pos + (self.velocity * speed)
-
-    def isInRange(self, otherBoid, sightDistance):
-        return math.dist(self.pos, otherBoid.pos) <= sightDistance
+        if self.pos.x <= 0:
+            self.pos.x = screen.get_width()
+        elif self.pos.x >= screen.get_width():
+            self.pos.x = 0
+        if self.pos.y <= 0:
+            self.pos.y = screen.get_height()
+        elif self.pos.y >= screen.get_height():
+            self.pos.y = 0
     
-    def getNeighbours(self,boids, range):
+    def setNeighbours(self, boids):
         self.neighbors = []
         for boi in boids:
-            if boi != self and self.isInRange(boi, range):
+            boiDis = pygame.Vector2.distance_to(self.pos, boi.pos)
+            if boi != self and boiDis <= self.fearDistance:
+                self.evilNeighbors.append(boi)
+            elif boi != self and boiDis <= self.sightDistance:
                 self.neighbors.append(boi)
     
     def updateCohesion(self):
-        neighborVectors = []
-        if len(neighborVectors) == 0: return
-        for boi in self.neighbors:
-            neighborVectors += boi.pos - self.pos
-        averageVector = pygame.Vector2
-        for vector in neighborVectors:
-            averageVector += vector
-        self.cohesion = averageVector * (1 / len(neighborVectors))
-        print(self.cohesion)
-        
-        
-    def updateVelocity(self, cohesionM = 1):
-        self.updateCohesion()
         sumVector = pygame.Vector2()
-        sumVector += self.cohesion * cohesionM
-        self.velocity = sumVector
+        if len(self.neighbors) == 0: 
+            self.cohesion = pygame.Vector2()
+            return
+        for boi in self.neighbors:
+            sumVector += boi.pos - self.pos
+        self.cohesion = sumVector / len(self.neighbors)
+        
+    def updateAlignment(self):
+        sumVector = pygame.Vector2()
+        if len(self.neighbors) == 0: 
+            self.cohesion = sumVector
+            return
+        for boi in self.neighbors:
+            sumVector += boi.velocity
+        self.alignment = sumVector / len(self.neighbors)
+    
+    def updateSeparation(self):
+        sumVector = pygame.Vector2()
+        if len(self.evilNeighbors) == 0:
+            self.separation = sumVector
+            return
+        for boi in self.evilNeighbors:
+            sumVector += self.pos - boi.pos
+        self.separation = sumVector / len(self.evilNeighbors)
+
+    def updateVelocity(self, cohesionM = 0.1, alignmentM = 0.3, separationM = 0.1):
+        self.updateCohesion()
+        self.updateAlignment()
+        self.updateSeparation()
+        self.velocity += self.cohesion * cohesionM / self.sightDistance
+        self.velocity += self.alignment * alignmentM / self.sightDistance
+        self.velocity += self.separation * separationM / self.sightDistance
+
+        speed = self.velocity.magnitude()
+
+        if speed > maxSpeed:
+            self.velocity = (self.velocity/speed)*maxSpeed
+        if speed < minSpeed:
+            self.velocity = (self.velocity/speed)*maxSpeed
+
 
 boids=[]
 
 for i in range(0,boidNum):
     startingX = random.randrange(0, screen.get_width())
     startingY = random.randrange(0, screen.get_width())
-    boids.append(Boid(pygame.Vector2(startingX, startingY)))
+    boids.append(Boid(pygame.Vector2(startingX, startingY), 150, 50))
 
 while running:
     # poll for events
@@ -63,16 +104,25 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    
-
     # fill the screen with a color to wipe away anything from last frame
-    screen.fill("black")
+    #screen.fill("black")
+    dim_surface = pygame.Surface(screen.get_size()).convert_alpha()
+    dim_surface.fill((5, 5, 5))
+
 
     for boi in boids:
-        boi.getNeighbours(boids, 30)
+        boi.setNeighbours(boids)
         boi.updateVelocity()
-        boi.updatePos(1)
-        pygame.draw.circle(screen, "white", boi.pos, 10)
+        boi.updatePos(0.1)
+        bx = boi.pos.x
+        by = boi.pos.y
+        boiTriangle = [(bx, by - 5), (bx - 3, by + 5), (bx, by + 2), (bx + 3, by + 5)]
+        boiRotate = [
+            (pygame.Vector2(x, y) - boi.pos).rotate_rad(boi.rotation + math.pi/2) + boi.pos for x, y in boiTriangle
+        ]
+        pygame.draw.polygon(screen, "white", boiRotate, 2)
+
+    screen.blit(dim_surface, (0, 0), special_flags=pygame.BLEND_RGB_SUB)
 
     # flip() the display to put your work on screen
     pygame.display.flip()
