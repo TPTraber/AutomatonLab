@@ -48,6 +48,13 @@ DEFAULT_PARAMS = {
         "survival_max": 3,
         "initial_density": 0.3,
     },
+    "cubes": {
+        "gridsize_x": 60,
+        "gridsize_y": 60,
+        "gridsize_z": 60,
+        "screensize": 800,
+        "density":    0.1,
+    },
     "fluid": {
         "grid_width": 320,
         "grid_height": 240,
@@ -172,6 +179,9 @@ def stream_sim(sim_id):
     elif sim_type == "boids":
         from experiments.boids import stream as boids_stream
         gen = boids_stream(sim_id, params)
+    elif sim_type == "cubes":
+        from experiments.cubes_stream import stream as cubes_stream
+        gen = cubes_stream(sim_id, params)
     else:
         return jsonify({"error": f"Streaming not yet supported for type: {sim_type}"}), 501
 

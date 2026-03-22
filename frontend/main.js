@@ -16,7 +16,7 @@ document.querySelectorAll(".filter-btn").forEach((btn) => {
   });
 });
 
-const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells", fluid: "Fluid" };
+const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells", fluid: "Fluid", cubes: "Cubes" };
 
 function formatDate(ts) {
   return new Date(ts * 1000).toLocaleDateString(undefined, {

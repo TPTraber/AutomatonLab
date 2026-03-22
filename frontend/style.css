@@ -202,6 +202,7 @@ label {
 .type-badge--boids   { background: #1a2a3d; color: #38bdf8; }
 .type-badge--cells   { background: #3d1a2b; color: #f472b6; }
 .type-badge--fluid   { background: #1a2e3d; color: #fb923c; }
+.type-badge--cubes   { background: #2a1a3d; color: #c084fc; }
 
 .filter-bar {
   display: flex;
@@ -236,6 +237,7 @@ label {
 .filter-btn--boids.active         { color: #38bdf8; border-color: #1a2a3d; background: #1a2a3d; }
 .filter-btn--cells.active         { color: #f472b6; border-color: #3d1a2b; background: #3d1a2b; }
 .filter-btn--fluid.active         { color: #fb923c; border-color: #1a2e3d; background: #1a2e3d; }
+.filter-btn--cubes.active         { color: #c084fc; border-color: #2a1a3d; background: #2a1a3d; }
 
 .gallery-empty {
   grid-column: 1 / -1;

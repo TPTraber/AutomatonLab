@@ -16,7 +16,7 @@ document.getElementById("edit-name-btn").addEventListener("click", () => {
 const authorEl = document.getElementById("slime-author");
 const typeBadge = document.getElementById("type-badge");
 
-const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells", fluid: "Fluid" };
+const TYPE_LABELS = { slime: "Slime Mold", boids: "Boids", cells: "Cells", fluid: "Fluid", cubes: "Cubes" };
 
 const SCHEMAS = {
   slime: [
@@ -105,6 +105,20 @@ const SCHEMAS = {
     ]},
     { group: "Initial State", fields: [
       { name: "initial_density", label: "Density (0–1)", min: 0, max: 1, step: 0.01 },
+    ]},
+  ],
+
+  cubes: [
+    { group: "Grid", fields: [
+      { name: "gridsize_x", label: "Grid X", min: 10, max: 100, step: 5 },
+      { name: "gridsize_y", label: "Grid Y", min: 10, max: 100, step: 5 },
+      { name: "gridsize_z", label: "Grid Z", min: 10, max: 100, step: 5 },
+    ]},
+    { group: "Display", fields: [
+      { name: "screensize", label: "Screen Size", min: 400, max: 1200, step: 50 },
+    ]},
+    { group: "Initial State", fields: [
+      { name: "density", label: "Density (0–1)", min: 0.01, max: 0.5, step: 0.01 },
     ]},
   ],
 };
@@ -276,6 +290,7 @@ form.addEventListener("submit", async (e) => {
     openMouseWs();
     simStream.classList.remove("hidden");
     simPlaceholder.classList.add("hidden");
+    runBtn.textContent = "Reset";
     setStatus("Running", "ok");
   } catch (err) {
     setStatus(`Error: ${err.message}`, "error");
@@ -283,6 +298,7 @@ form.addEventListener("submit", async (e) => {
     runBtn.disabled = false;
   }
 });
+
 
 function capturePreview() {
   if (simStream.classList.contains("hidden")) return null;
