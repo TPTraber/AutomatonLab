@@ -26,6 +26,7 @@ def next_generation(row: np.ndarray, rule_map: dict[tuple[int, int, int], int], 
     new_row = np.zeros_like(row)
 
     for i in range(width):
+        # if wrap then lines are circular 
         if wrap:
             left = row[i - 1] if i > 0 else row[-1]
             center = row[i]
@@ -57,27 +58,30 @@ def render_grid(grid: np.ndarray, cell_size: int = 6, row_scale: int = 1) -> np.
 
 def animate_rule(
     rule_number: int = 110, width: int = 151, steps: int = 120, cell_size: int = 6,
-    fps: int = 10, output_path: str = "rule110.mp4", wrap: bool = False, show_preview: bool = True,
+    fps: int = 10, wrap: bool = False, show_preview: bool = True, ether: str = "11111000100110", seed: str = "11111000100110"
     ) -> None:
 
     rule_map = rule_to_map(rule_number)
 
-    # accrding to wolfram research paper
-    ether = "000100110111111"
     tile = np.array([int(ch) for ch in ether], dtype=np.uint8)
 
-    repeats = (width + len(tile) - 1) // len(tile)
-    row = np.tile(tile, repeats)[:width].copy()
+    seed_bits = np.array([int(ch) for ch in seed], dtype=np.uint8)
+    base_width = width - len(seed_bits)
+    if base_width < 0:
+        raise ValueError("width must be at least as large as the seed length")
 
+    repeats = (base_width + len(tile) - 1) // len(tile)
+    base_row = np.tile(tile, repeats)[:base_width].copy()
+
+    # Insert the seed into the centered position without overwriting ether cells.
+    start = base_width // 2
+    row = np.concatenate((base_row[:start], seed_bits, base_row[start:]))
 
     grid = np.zeros((steps, width), dtype=np.uint8)
     grid[0] = row
 
     frame_width = width * cell_size
     frame_height = steps * cell_size
-
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    writer = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
 
     for t in range(steps):
         if t > 0:
@@ -91,29 +95,31 @@ def animate_rule(
             pad = np.full((pad_height, frame_width, 3), 255, dtype=np.uint8)
             frame = np.vstack([frame, pad])
 
-        writer.write(frame)
-
         if show_preview:
             cv2.imshow(f"Rule {rule_number}", frame)
             key = cv2.waitKey(int(1000 / fps))
             if key == 27:
                 break
 
-    writer.release()
     cv2.destroyAllWindows()
-    print(f"Saved video to {output_path}")
 
 def main():
     animate_rule(
         rule_number=110,
-        width=151,
-        steps=180,
-        cell_size=8,
-        fps=10,
-        output_path="rule110.mp4",
-        wrap=False,
-        show_preview=True,
+        width=164, #must be seed.length mod(14)
+        steps=120,
+        cell_size=10,
+        fps=15,
+        wrap=True,
+        show_preview=True, 
+        ether="11111000100110",
+        seed ="111110100111110011100110" 
     )
+
+    # possible glider seeds: https://www.comunidad.escom.ipn.mx/genaro/Papers/Papers_on_CA_files/ATLAS/node14.html
+    #  '111110100111110011100110'
+    #  '111110'
+    #  '11111010'
 
 
 if __name__ == "__main__":
