@@ -23,6 +23,7 @@ const SCHEMAS = {
     { group: "Agents", fields: [
       { name: "n_agents",   label: "Agent Count",  min: 1000,  max: 200000, step: 1000 },
       { name: "n_species",  label: "Species (1-3)", min: 1,    max: 3,      step: 1    },
+      { name: "colors", label: "Colors", type: "colorpickers", keys: ["color_0", "color_1", "color_2"], defaults: ["#00ffff", "#ff00ff", "#0000ff"] },
     ]},
     { group: "Sensors", fields: [
       { name: "sensor_distance", label: "Sensor Distance",   min: 1,  max: 30,  step: 0.5 },
@@ -150,6 +151,32 @@ function buildSwatches(field) {
   return wrap;
 }
 
+function buildColorPickers(field) {
+  const wrap = document.createElement("label");
+  wrap.className = "colorpickers-field";
+  wrap.innerHTML = `<span>${field.label}</span>`;
+  const row = document.createElement("div");
+  row.className = "colorpickers-row";
+  field.keys.forEach((key, i) => {
+    const inp = document.createElement("input");
+    inp.type = "color";
+    inp.name = key;
+    inp.className = "color-dot";
+    inp.value = field.defaults[i];
+    inp.dataset.index = i;
+    row.appendChild(inp);
+  });
+  wrap.appendChild(row);
+  return wrap;
+}
+
+function syncColorPickers() {
+  const nSpecies = parseInt(form.elements["n_species"]?.value ?? 1);
+  form.querySelectorAll("input.color-dot").forEach((inp) => {
+    inp.style.display = parseInt(inp.dataset.index) < nSpecies ? "" : "none";
+  });
+}
+
 function buildForm(type) {
   const schema = SCHEMAS[type] ?? SCHEMAS.slime;
   form.innerHTML = "";
@@ -160,6 +187,8 @@ function buildForm(type) {
     fields.forEach((field) => {
       if (field.type === "swatches") {
         groupEl.appendChild(buildSwatches(field));
+      } else if (field.type === "colorpickers") {
+        groupEl.appendChild(buildColorPickers(field));
       } else if (field.type === "binary8") {
         const lbl = document.createElement("label");
         lbl.innerHTML = `${field.label}<input type="text" name="${field.name}" maxlength="8" pattern="[01]{8}" placeholder="01101110" class="binary8-input" />`;
@@ -178,9 +207,9 @@ function fillForm(params) {
   for (const [key, val] of Object.entries(params)) {
     const input = form.elements[key];
     if (!input) continue;
-    input.value = input.classList.contains("binary8-input")
-      ? parseInt(val).toString(2).padStart(8, "0")
-      : val;
+    if (input.type === "color") input.value = val;
+    else if (input.classList.contains("binary8-input")) input.value = parseInt(val).toString(2).padStart(8, "0");
+    else input.value = val;
     // Sync swatch active state if this is a hidden swatch input
     const row = input.previousElementSibling;
     if (row && row.classList.contains("swatch-row")) {
@@ -197,9 +226,11 @@ function getFormParams() {
       .filter((el) => el.name)
       .map((el) => [
         el.name,
-        el.classList.contains("binary8-input")
-          ? parseInt(el.value, 2)
-          : Number(el.value),
+        el.type === "color"
+          ? el.value
+          : el.classList.contains("binary8-input")
+            ? parseInt(el.value, 2)
+            : Number(el.value),
       ])
   );
 }
@@ -231,6 +262,10 @@ async function load() {
     }
     buildForm(sim.type);
     fillForm(sim.params);
+    if (sim.type === "slime") {
+      syncColorPickers();
+      form.elements["n_species"]?.addEventListener("input", syncColorPickers);
+    }
   } catch (err) {
     setStatus(`Error: ${err.message}`, "error");
   }

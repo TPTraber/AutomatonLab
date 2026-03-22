@@ -26,6 +26,9 @@ DEFAULT_PARAMS = {
         "diffusion_speed":    0.2,
         "evaporation_speed":  2.0,
         "deposit_amount":     255.0,
+        "color_0":            "#00ffff",
+        "color_1":            "#ff00ff",
+        "color_2":            "#0000ff",
     },
     "boids": {
         "num_boids": 200,

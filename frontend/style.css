@@ -545,6 +545,29 @@ label {
 .swatch-btn:hover { transform: scaleY(1.15); }
 .swatch-active { border-color: #fff; }
 
+.colorpickers-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text);
+  font-size: 13px;
+}
+.colorpickers-row {
+  display: flex;
+  gap: 6px;
+}
+input[type="color"].color-dot {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+}
+input[type="color"].color-dot::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"].color-dot::-webkit-color-swatch { border: none; border-radius: 3px; }
+
 .sim-actions {
   display: flex;
   gap: 8px;
