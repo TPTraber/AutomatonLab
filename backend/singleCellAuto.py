@@ -56,26 +56,62 @@ def render_grid(grid: np.ndarray, cell_size: int = 6, row_scale: int = 1) -> np.
     return img
 
 
-def animate_rule(
-    rule_number: int = 110, width: int = 151, steps: int = 120, cell_size: int = 6,
-    fps: int = 10, wrap: bool = False, show_preview: bool = True, ether: str = "11111000100110", seed: str = "11111000100110"
-    ) -> None:
+def adjusted_width_for_single_seed(min_width: int, seed_len: int, period: int) -> int:
+    final_width = max(min_width, seed_len)
+    remainder = (final_width - seed_len) % (2 * period)
+    if remainder != 0:
+        final_width += (2 * period) - remainder
+    return final_width
 
+
+def two_seed_layout(
+    min_width: int,
+    seed1_len: int,
+    seed2_len: int,
+    period: int,
+) -> tuple[int, int, int]:
+    min_ether_units = max(1, (max(min_width, 0) - seed1_len - seed2_len + period - 1) // period)
+    final_width = seed1_len + seed2_len + (min_ether_units * period)
+
+    gap_units = 1 if min_ether_units % 2 == 1 or min_ether_units == 1 else 2
+    outer_units = (min_ether_units - gap_units) // 2
+
+    left_padding = outer_units * period
+    middle_gap = gap_units * period
+
+    return final_width, left_padding, middle_gap
+
+
+def animate_rule(
+    rule_number: int = 110, width: int = 140, steps: int = 120, cell_size: int = 6, fps: int = 10, wrap: bool = False,
+      show_preview: bool = True, ether: str = "11111000100110", seed1: str = "11111000100110", seed2: str = ""
+    ) -> None:
     rule_map = rule_to_map(rule_number)
 
     tile = np.array([int(ch) for ch in ether], dtype=np.uint8)
+    period = len(tile)
 
-    seed_bits = np.array([int(ch) for ch in seed], dtype=np.uint8)
-    base_width = width - len(seed_bits)
-    if base_width < 0:
-        raise ValueError("width must be at least as large as the seed length")
+    seed_bits1 = np.array([int(ch) for ch in seed1], dtype=np.uint8)
+    seed_bits2 = np.array([int(ch) for ch in seed2], dtype=np.uint8) if seed2 else np.array([], dtype=np.uint8)
 
-    repeats = (base_width + len(tile) - 1) // len(tile)
-    base_row = np.tile(tile, repeats)[:base_width].copy()
+    if seed_bits2.size == 0:
+        width = adjusted_width_for_single_seed(width, len(seed_bits1), period)
+        base_width = width - len(seed_bits1)
+        repeats = (base_width + period - 1) // period
+        base_row = np.tile(tile, repeats)[:base_width].copy()
 
-    # Insert the seed into the centered position without overwriting ether cells.
-    start = base_width // 2
-    row = np.concatenate((base_row[:start], seed_bits, base_row[start:]))
+        # For a centered seed, both ether flanks must be multiples of the ether period.
+        start = base_width // 2
+        row = np.concatenate((base_row[:start], seed_bits1, base_row[start:]))
+    else:
+        width, left_padding, middle_gap = two_seed_layout(width, len(seed_bits1), len(seed_bits2), period)
+        right_padding = width - left_padding - len(seed_bits1) - middle_gap - len(seed_bits2)
+
+        left_row = np.tile(tile, (left_padding + period - 1) // period)[:left_padding]
+        gap_row = np.tile(tile, (middle_gap + period - 1) // period)[:middle_gap]
+        right_row = np.tile(tile, (right_padding + period - 1) // period)[:right_padding]
+
+        row = np.concatenate((left_row, seed_bits1, gap_row, seed_bits2, right_row))
 
     grid = np.zeros((steps, width), dtype=np.uint8)
     grid[0] = row
@@ -103,18 +139,69 @@ def animate_rule(
 
     cv2.destroyAllWindows()
 
+
 def main():
     animate_rule(
+        rule_number=80,
+        width=140,  # Minimum final width; animate_rule rounds up to a valid aligned width.
+        steps=60,
+        cell_size=10,
+        fps=15,
+        wrap=True,
+        show_preview=True, 
+        ether="0",
+        seed1 ="11111010011111001110011011111" 
+    )
+    animate_rule(
         rule_number=110,
-        width=164, #must be seed.length mod(14)
-        steps=120,
+        width=140,  # Minimum final width; animate_rule rounds up to a valid aligned width.
+        steps=60,
+        cell_size=10,
+        fps=15,
+        wrap=True,
+        show_preview=True, 
+        ether="0",
+        seed1 ="111110100111110011100110" 
+    )
+
+    animate_rule(
+        rule_number=110,
+        width=140,  # Minimum final width; animate_rule rounds up to a valid aligned width.
+        steps=60,
         cell_size=10,
         fps=15,
         wrap=True,
         show_preview=True, 
         ether="11111000100110",
-        seed ="111110100111110011100110" 
+        seed1 ="111110100111110011100110" 
     )
+
+    animate_rule(
+        rule_number=110,
+        width=140, 
+        steps=60,
+        cell_size=10,
+        fps=15,
+        wrap=True,
+        show_preview=True, 
+        ether="11111000100110",
+        seed1 ="11111010" 
+    )
+
+    animate_rule(
+        rule_number=110,
+        width=140, 
+        steps=60,
+        cell_size=10,
+        fps=15,
+        wrap=True,
+        show_preview=True, 
+        ether="11111000100110",
+        seed1 ="111110",
+        seed2 = "11111010",
+    )
+
+
 
     # possible glider seeds: https://www.comunidad.escom.ipn.mx/genaro/Papers/Papers_on_CA_files/ATLAS/node14.html
     #  '111110100111110011100110'
